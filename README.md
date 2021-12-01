@@ -24,15 +24,39 @@ set interfaces ethernet eth0 dhcpv6-pd pd 1 interface eth1 host-address ::1
 set interfaces ethernet eth0 dhcpv6-pd pd 1 interface eth1 prefix-id :0
 set interfaces ethernet eth0 dhcpv6-pd pd 1 interface eth1 service dhcpv6-stateless
 set firewall ipv6-name WAN6_IN default-action drop
-set firewall ipv6-name WAN6_IN description 'Ziggo IPv6'
-set firewall ipv6-name WAN6_IN rule 5 action accept
-set firewall ipv6-name WAN6_IN rule 5 state established enable
-set firewall ipv6-name WAN6_IN rule 5 state related enable
+set firewall ipv6-name WAN6_IN description 'WAN inbound traffic forwarded to LAN'
+set firewall ipv6-name WAN6_IN enable-default-log
 set firewall ipv6-name WAN6_IN rule 10 action accept
-set firewall ipv6-name WAN6_IN rule 10 icmpv6
-set firewall ipv6-name WAN6_IN rule 10 protocol icmpv6
+set firewall ipv6-name WAN6_IN rule 10 description 'Allow established/related sessions'
+set firewall ipv6-name WAN6_IN rule 10 state established enable
+set firewall ipv6-name WAN6_IN rule 10 state related enable
+set firewall ipv6-name WAN6_IN rule 20 action drop
+set firewall ipv6-name WAN6_IN rule 20 description 'Drop invalid state'
+set firewall ipv6-name WAN6_IN rule 20 state invalid enable
+set firewall ipv6-name WAN6_IN rule 30 action accept
+set firewall ipv6-name WAN6_IN rule 30 description 'Allow IPv6 icmp'
+set firewall ipv6-name WAN6_IN rule 30 icmpv6
+set firewall ipv6-name WAN6_IN rule 30 protocol icmpv6
+set firewall ipv6-name WAN6_LOCAL default-action drop
+set firewall ipv6-name WAN6_LOCAL description 'WAN inbound traffic to the router'
+set firewall ipv6-name WAN6_LOCAL enable-default-log
+set firewall ipv6-name WAN6_LOCAL rule 10 action accept
+set firewall ipv6-name WAN6_LOCAL rule 10 description 'Allow established/related sessions'
+set firewall ipv6-name WAN6_LOCAL rule 10 state established enable
+set firewall ipv6-name WAN6_LOCAL rule 10 state related enable
+set firewall ipv6-name WAN6_LOCAL rule 20 action drop
+set firewall ipv6-name WAN6_LOCAL rule 20 description 'Drop invalid state'
+set firewall ipv6-name WAN6_LOCAL rule 20 state invalid enable
+set firewall ipv6-name WAN6_LOCAL rule 30 action accept
+set firewall ipv6-name WAN6_LOCAL rule 30 description 'Allow IPv6 icmp'
+set firewall ipv6-name WAN6_LOCAL rule 30 protocol ipv6-icmp
+set firewall ipv6-name WAN6_LOCAL rule 40 action accept
+set firewall ipv6-name WAN6_LOCAL rule 40 description 'allow dhcpv6'
+set firewall ipv6-name WAN6_LOCAL rule 40 destination port 546
+set firewall ipv6-name WAN6_LOCAL rule 40 protocol udp
+set firewall ipv6-name WAN6_LOCAL rule 40 source port 547
 set interfaces ethernet eth0 firewall in ipv6-name WAN6_IN
-set interfaces ethernet eth0 firewall local ipv6-name WAN6_IN
+set interfaces ethernet eth0 firewall local ipv6-name WAN6_LOCAL
 ```
 
 ## Basic setup
@@ -179,25 +203,54 @@ A basic firewall for the WAN side of things can be configured:
 
 ```
 set firewall ipv6-name WAN6_IN default-action drop
-set firewall ipv6-name WAN6_IN description 'Ziggo IPv6'
-set firewall ipv6-name WAN6_IN rule 5 action accept
-set firewall ipv6-name WAN6_IN rule 5 state established enable
-set firewall ipv6-name WAN6_IN rule 5 state related enable
+set firewall ipv6-name WAN6_IN description 'WAN inbound traffic forwarded to LAN'
+set firewall ipv6-name WAN6_IN enable-default-log
 set firewall ipv6-name WAN6_IN rule 10 action accept
-set firewall ipv6-name WAN6_IN rule 10 icmpv6
-set firewall ipv6-name WAN6_IN rule 10 protocol icmpv6
+set firewall ipv6-name WAN6_IN rule 10 description 'Allow established/related sessions'
+set firewall ipv6-name WAN6_IN rule 10 state established enable
+set firewall ipv6-name WAN6_IN rule 10 state related enable
+set firewall ipv6-name WAN6_IN rule 20 action drop
+set firewall ipv6-name WAN6_IN rule 20 description 'Drop invalid state'
+set firewall ipv6-name WAN6_IN rule 20 state invalid enable
+set firewall ipv6-name WAN6_IN rule 30 action accept
+set firewall ipv6-name WAN6_IN rule 30 description 'Allow IPv6 icmp'
+set firewall ipv6-name WAN6_IN rule 30 icmpv6
+set firewall ipv6-name WAN6_IN rule 30 protocol icmpv6
+set firewall ipv6-name WAN6_LOCAL default-action drop
+set firewall ipv6-name WAN6_LOCAL description 'WAN inbound traffic to the router'
+set firewall ipv6-name WAN6_LOCAL enable-default-log
+set firewall ipv6-name WAN6_LOCAL rule 10 action accept
+set firewall ipv6-name WAN6_LOCAL rule 10 description 'Allow established/related sessions'
+set firewall ipv6-name WAN6_LOCAL rule 10 state established enable
+set firewall ipv6-name WAN6_LOCAL rule 10 state related enable
+set firewall ipv6-name WAN6_LOCAL rule 20 action drop
+set firewall ipv6-name WAN6_LOCAL rule 20 description 'Drop invalid state'
+set firewall ipv6-name WAN6_LOCAL rule 20 state invalid enable
+set firewall ipv6-name WAN6_LOCAL rule 30 action accept
+set firewall ipv6-name WAN6_LOCAL rule 30 description 'Allow IPv6 icmp'
+set firewall ipv6-name WAN6_LOCAL rule 30 protocol ipv6-icmp
+set firewall ipv6-name WAN6_LOCAL rule 40 action accept
+set firewall ipv6-name WAN6_LOCAL rule 40 description 'allow dhcpv6'
+set firewall ipv6-name WAN6_LOCAL rule 40 destination port 546
+set firewall ipv6-name WAN6_LOCAL rule 40 protocol udp
+set firewall ipv6-name WAN6_LOCAL rule 40 source port 547
 ```
 
-This basic firewall set will allow traffic that originated from inside the
+(This rule set is based on the default Ubiquity Edgerouter IPv6 rule set)
+
+This basic firewall set WAN6_IN will allow traffic that originated from inside the
 network (compare with IPv4 NAT), and it will allow ICMPv6 messages from outside
 to inside. There is some discussion on the internet as to whether this is safe,
-but that's beyond the scope of this document. Use your own discretion.
+but that's beyond the scope of this document. The second firewall set,
+WAN6_LOCAL, will regulate traffic that is bound for the router itself. This is
+essentially the same set as above, but extended with rules for DHCPv6 and
+ICMPv6.
 
 Once we have this firewall set, we can apply it to the WAN interface:
 
 ```
 set interfaces ethernet eth0 firewall in ipv6-name WAN6_IN
-set interfaces ethernet eth0 firewall local ipv6-name WAN6_IN
+set interfaces ethernet eth0 firewall local ipv6-name WAN6_LOCAL
 ```
 
 ## Port forwarding
