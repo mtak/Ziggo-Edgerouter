@@ -1,4 +1,4 @@
-# Ziggo-Edgerouter
+# Ziggo native IPv6 Edgerouter configuration
 
 This page outlines the steps needed to configure the Ziggo native IPv6
 connectivity on a Ubiquity EdgeRouter. 
