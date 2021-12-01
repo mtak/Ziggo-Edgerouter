@@ -3,6 +3,8 @@
 This page outlines the steps needed to configure the Ziggo native IPv6
 connectivity on a Ubiquity EdgeRouter. 
 
+{:toc}
+
 Assumptions:
 
 - The EdgeRouter is directly connected to the cable modem (CM).
@@ -21,6 +23,16 @@ set interfaces ethernet eth0 dhcpv6-pd pd 1 prefix-length 56
 set interfaces ethernet eth0 dhcpv6-pd pd 1 interface eth1 host-address ::1
 set interfaces ethernet eth0 dhcpv6-pd pd 1 interface eth1 prefix-id :0
 set interfaces ethernet eth0 dhcpv6-pd pd 1 interface eth1 service dhcpv6-stateless
+set firewall ipv6-name WAN6_IN default-action drop
+set firewall ipv6-name WAN6_IN description 'Ziggo IPv6'
+set firewall ipv6-name WAN6_IN rule 5 action accept
+set firewall ipv6-name WAN6_IN rule 5 state established enable
+set firewall ipv6-name WAN6_IN rule 5 state related enable
+set firewall ipv6-name WAN6_IN rule 10 action accept
+set firewall ipv6-name WAN6_IN rule 10 icmpv6
+set firewall ipv6-name WAN6_IN rule 10 protocol icmpv6
+set interfaces ethernet eth0 firewall in ipv6-name WAN6_IN
+set interfaces ethernet eth0 firewall local ipv6-name WAN6_IN
 ```
 
 ## Basic setup
@@ -158,3 +170,72 @@ eth1.100     10.100.100.1/24                   u/u  MAAS
 eth1.316     10.100.3.17/30                    u/u  RIPE Atlas                  
 ```
 
+## Firewall
+
+In IPv6, there is no more NAT to hide behind, so a proper firewall setup is
+required. 
+
+A basic firewall for the WAN side of things can be configured:
+
+```
+set firewall ipv6-name WAN6_IN default-action drop
+set firewall ipv6-name WAN6_IN description 'Ziggo IPv6'
+set firewall ipv6-name WAN6_IN rule 5 action accept
+set firewall ipv6-name WAN6_IN rule 5 state established enable
+set firewall ipv6-name WAN6_IN rule 5 state related enable
+set firewall ipv6-name WAN6_IN rule 10 action accept
+set firewall ipv6-name WAN6_IN rule 10 icmpv6
+set firewall ipv6-name WAN6_IN rule 10 protocol icmpv6
+```
+
+This basic firewall set will allow traffic that originated from inside the
+network (compare with IPv4 NAT), and it will allow ICMPv6 messages from outside
+to inside. There is some discussion on the internet as to whether this is safe,
+but that's beyond the scope of this document. Use your own discretion.
+
+Once we have this firewall set, we can apply it to the WAN interface:
+
+```
+set interfaces ethernet eth0 firewall in ipv6-name WAN6_IN
+set interfaces ethernet eth0 firewall local ipv6-name WAN6_IN
+```
+
+## Port forwarding
+
+*NO MORE PORTFORWARDING!!!111one!!*
+
+The enormous address space of IPv6 gives us the option to not have to use port
+forwarding anymore. You can directly connect to a host at home from anywhere on
+the internet, provided you have opened the firewall. An example would be:
+
+```
+set firewall ipv6-name WAN6_IN rule 20 action accept
+set firewall ipv6-name WAN6_IN rule 20 description 'local webserver'
+set firewall ipv6-name WAN6_IN rule 20 destination address 2001:1c00:2509:8200:2c0a:c6ff:feda:6a3f
+set firewall ipv6-name WAN6_IN rule 20 destination port 80
+set firewall ipv6-name WAN6_IN rule 20 protocol tcp
+```
+
+This will allow direct traffic from the internet to the host in your network:
+
+```bash
+mtak@dc4:~$ curl -si 'http://[2001:1c00:2509:8200:2c0a:c6ff:feda:6a3f]' | head -20
+HTTP/1.1 200 OK
+Date: Wed, 01 Dec 2021 14:01:30 GMT
+Server: Apache/2.4.41 (Ubuntu)
+Last-Modified: Wed, 01 Dec 2021 13:56:29 GMT
+ETag: "2aa6-5d2160a6f0553"
+Accept-Ranges: bytes
+Content-Length: 10918
+Vary: Accept-Encoding
+Content-Type: text/html
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+```
+
+# Contributing
+
+Pull requests are welcome at
+[https://github.com/mtak/Ziggo-Edgerouter](https://github.com/mtak/Ziggo-Edgerouter).
